@@ -36,10 +36,10 @@ module AgCalDAV
       		@duri.password = @password
       		
       	elsif @authtype == 'basic'
-	    	#Don't Raise or do anything else
-	    else
-	    	raise "Authentication Type Specified Is Not Valid. Please use basic or digest"
-	    end
+          #Don't Raise or do anything else
+        else
+          raise "Authentication Type Specified Is Not Valid. Please use basic or digest"
+        end
       else
       	@authtype = 'basic'
       end
@@ -66,36 +66,36 @@ module AgCalDAV
       	
         req = Net::HTTP::Report.new(@url, initheader = {'Content-Type'=>'application/xml'} )
         
-		if not @authtype == 'digest'
-			req.basic_auth @user, @password
-		else
-			req.add_field 'Authorization', digestauth('REPORT')
-		end
+        if not @authtype == 'digest'
+          req.basic_auth @user, @password
+        else
+          req.add_field 'Authorization', digestauth('REPORT')
+        end
 		    if data[:start].is_a? Integer
           req.body = AgCalDAV::Request::ReportVEVENT.new(Time.at(data[:start]).utc.strftime("%Y%m%dT%H%M%S"), 
-                                                        Time.at(data[:end]).utc.strftime("%Y%m%dT%H%M%S") ).to_xml
+            Time.at(data[:end]).utc.strftime("%Y%m%dT%H%M%S") ).to_xml
         else
           req.body = AgCalDAV::Request::ReportVEVENT.new(DateTime.parse(data[:start]).utc.strftime("%Y%m%dT%H%M%S"), 
-                                                        DateTime.parse(data[:end]).utc.strftime("%Y%m%dT%H%M%S") ).to_xml
+            DateTime.parse(data[:end]).utc.strftime("%Y%m%dT%H%M%S") ).to_xml
         end
         res = http.request(req)
       } 
-        errorhandling res
-        result = ""
+      errorhandling res
+      result = ""
         
-        xml = REXML::Document.new(res.body)
-        REXML::XPath.each( xml, '//c:calendar-data/', {"c"=>"urn:ietf:params:xml:ns:caldav"} ){|c| result << c.text}
-        r = Icalendar.parse(result)      
-        unless r.empty?
-          r.each do |calendar|
-            calendar.events.each do |event|
-              events << event
-            end
+      xml = REXML::Document.new(res.body)
+      REXML::XPath.each( xml, '//c:calendar-data/', {"c"=>"urn:ietf:params:xml:ns:caldav"} ){|c| result << c.text}
+      r = Icalendar.parse(result)      
+      unless r.empty?
+        r.each do |calendar|
+          calendar.events.each do |event|
+            events << event
           end
-          events
-        else
-          return false
         end
+        events
+      else
+        return false
+      end
     end
 
     def find_event uuid
@@ -146,21 +146,31 @@ module AgCalDAV
       c.events = []
       uuid = UUID.new.generate
       raise DuplicateError if entry_with_uuid_exists?(uuid)
-      c.event do
-        uid           uuid 
-        dtstart       DateTime.parse(event[:start])
-        dtend         DateTime.parse(event[:end])
-        categories    event[:categories]# Array
-        contacts      event[:contacts] # Array
-        attendees     event[:attendees]# Array
-        duration      event[:duration]
-        summary       event[:title]
-        description   event[:description]
-        klass         event[:accessibility] #PUBLIC, PRIVATE, CONFIDENTIAL
-        location      event[:location]
-        geo_location  event[:geo_location]
-        status        event[:status]
-        url           event[:url]
+      c.event do |e|
+        e.uid           uuid 
+        e.dtstart       DateTime.parse(event[:start])
+        e.dtend         DateTime.parse(event[:end])
+        e.categories    event[:categories]# Array
+        e.contacts      event[:contacts] # Array
+        e.attendees     event[:attendees]# Array
+        e.duration      event[:duration]
+        e.summary       event[:title]
+        e.description   event[:description]
+        e.klass         event[:accessibility] #PUBLIC, PRIVATE, CONFIDENTIAL
+        e.location      event[:location]
+        e.geo_location  event[:geo_location]
+        e.status        event[:status]
+        e.url           event[:url]
+        e.notify        event[:notify]
+        e.job_id        event[:job_id]
+        e.alarm do |a|
+          a.action    event[:alarm][:action]
+          a.description event[:alarm][:description]
+          a.summary     event[:alarm][:title]
+          a.attendee  event[:alarm][:attendee]
+          a.trigger   event[:alarm][:trigger]
+         # a.append_attach event[:alarm][:append_attach]
+        end if event.has_key?(:alarm)
       end
       cstring = c.to_ical
       res = nil

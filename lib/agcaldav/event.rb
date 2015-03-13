@@ -12,6 +12,9 @@ module Icalendar
 
     ## Single instance properties
 
+    ical_property :notify
+    ical_property :job_id
+    
     # Access classification (PUBLIC, PRIVATE, CONFIDENTIAL...)
     ical_property :ip_class, :klass
 
