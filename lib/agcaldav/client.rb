@@ -55,6 +55,7 @@ module AgCalDAV
         http.use_ssl = @ssl
         http.verify_mode = OpenSSL::SSL::VERIFY_NONE
       end
+      #http.set_debug_output($stdout)
       http
     end
 
@@ -64,7 +65,10 @@ module AgCalDAV
       res = nil
       __create_http.start {|http|
       	
-        req = Net::HTTP::Report.new(@url, initheader = {'Content-Type'=>'application/xml'} )
+        req = Net::HTTP::Report.new(@url, initheader = {
+            'Content-Type'=>'application/xml', 
+            'Depth'=> '1'
+          } )
         
         if not @authtype == 'digest'
           req.basic_auth @user, @password
